@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Aussenlager, Outdoor-Ausrüstung im Vergleich</title>
+<title>Advantic, Outdoor-Ausrüstung im Vergleich</title>
 <meta name="description" content="Unabhängige Empfehlungen für Zelt, Schlafsystem, Rucksack und Kocher, mit Kaufberatung für Camping und Trekking.">
 <style>
   :root{
@@ -52,10 +52,17 @@
   .filters button{font:inherit;font-size:15px;background:transparent;border:1.5px solid var(--spruce);color:var(--spruce);padding:6px 14px;border-radius:999px;cursor:pointer}
   .filters button[aria-pressed="true"]{background:var(--spruce);color:#fff}
   .list{list-style:none;margin:0;padding:0;border-top:2px solid var(--ink)}
-  .item{display:grid;grid-template-columns:150px 1fr auto;gap:8px 24px;align-items:center;padding:20px 0;border-bottom:1px solid var(--line)}
-  .item .cat{font-size:14px;color:var(--glacier);font-weight:650}
+  .item{display:grid;grid-template-columns:160px 1fr auto;gap:8px 24px;align-items:center;padding:20px 0;border-bottom:1px solid var(--line)}
+  .item .cat{font-size:14px;color:var(--glacier);font-weight:650;margin-bottom:4px}
   .item h3{font-family:var(--serif);font-size:21px;margin:0 0 2px}
   .item p{margin:0;color:var(--muted);font-size:16px}
+  .thumb{display:block;border-radius:4px;overflow:hidden;position:relative;aspect-ratio:16/9;background:#0c1c19}
+  .thumb img{display:block;width:100%;height:100%;object-fit:cover}
+  .thumb::after{content:"▶";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;text-shadow:0 1px 4px rgba(0,0,0,.6);background:rgba(0,0,0,0);transition:background .15s}
+  .thumb:hover::after{background:rgba(0,0,0,.15)}
+  .actions{display:flex;flex-direction:column;gap:8px;align-items:stretch}
+  .actions .btn{text-align:center;white-space:nowrap}
+  .btn.small{padding:8px 16px;font-size:14px}
   .empty{padding:24px 0;color:var(--muted)}
 
   /* Ratgeber */
@@ -72,8 +79,10 @@
   footer p{margin:0 0 8px;max-width:64ch}
 
   @media (max-width:760px){
-    .item{grid-template-columns:1fr;gap:6px}
-    .item .btn{justify-self:start;margin-top:8px}
+    .item{grid-template-columns:1fr;gap:10px}
+    .thumb{aspect-ratio:16/9;max-width:320px}
+    .actions{flex-direction:row;flex-wrap:wrap}
+    .actions .btn{flex:1 1 auto}
     .cols{grid-template-columns:1fr;gap:24px}
     nav a{margin-left:14px}
     .hero .wrap{padding-top:56px;padding-bottom:60px}
@@ -92,7 +101,7 @@
 
 <header class="site">
   <div class="wrap">
-    <a class="brand" href="#top">Aussenlager</a>
+    <a class="brand" href="#top">Advantic</a>
     <nav aria-label="Hauptnavigation">
       <a href="#empfehlungen">Empfehlungen</a>
       <a href="#ratgeber">Ratgeber</a>
@@ -126,7 +135,7 @@
   <section id="empfehlungen">
     <div class="wrap">
       <h2>Empfehlungen</h2>
-      <p class="lead">Jedes Produkt führt zu Amazon. Filtere nach Kategorie und öffne das Angebot in einem neuen Tab.</p>
+      <p class="lead">Jedes Produkt zeigt ein Testvideo, führt zu Amazon und zur Herstellerseite. Filtere nach Kategorie.</p>
 
       <div class="filters" role="group" aria-label="Nach Kategorie filtern" id="filters"></div>
       <ul class="list" id="list"></ul>
@@ -159,6 +168,7 @@
     <div class="wrap about">
       <h2>So finanziert sich diese Seite</h2>
       <p>Ich bin Teilnehmer am Partnerprogramm von Amazon EU. Kaufst du über einen Link auf dieser Seite, bekomme ich eine kleine Provision. Dein Preis bleibt gleich. Empfohlen wird nur, was ich selbst kaufen würde.</p>
+      <p>Die Vorschaubilder stammen von unabhängigen YouTube-Testvideos, nicht von Amazon. Amazon-Produktbilder dürfen laut Partnerbedingungen nur über die offiziellen Amazon-Werkzeuge angezeigt werden.</p>
       <p><a href="#empfehlungen">Zurück zu den Empfehlungen</a></p>
     </div>
   </section>
@@ -179,22 +189,33 @@
 
 <script>
   // ======= HIER ANPASSEN =======
-  // Dein Amazon-Partner-Tag aus PartnerNet, z. B. "aussenlager-21"
+  // Dein Amazon-Partner-Tag aus PartnerNet, z. B. "advantic-21"
   const PARTNER_TAG = "DEIN-PARTNER-TAG-21";
 
   // Deine Produkte. "q" ist der Suchbegriff bei Amazon.
   // Besser: ersetze "url" durch den Produktlink mit deiner ASIN
   // (Format: https://www.amazon.de/dp/ASIN?tag=DEIN-TAG), dann fällt "q" weg.
+  // "video" ist die YouTube-ID eines Testvideos, das Bild wird daraus automatisch geladen.
+  // "hersteller" ist der Link auf die offizielle Produktseite.
   const PRODUCTS = [
-    {cat:"Zelte", name:"MSR Hubba Hubba NX 2", text:"Leichtes Zweipersonenzelt für Trekking, mit zwei Eingängen und Apsiden.", q:"MSR Hubba Hubba NX 2"},
-    {cat:"Zelte", name:"Naturehike Cloud Up 2", text:"Günstiges Leichtzelt für zwei, gedacht für den Einstieg ins Trekking.", q:"Naturehike Cloud Up 2"},
-    {cat:"Schlafen", name:"Therm-a-Rest NeoAir XLite NXT", text:"Ultraleichte aufblasbare Isomatte mit hoher Wärmedämmung.", q:"Therm-a-Rest NeoAir XLite NXT"},
-    {cat:"Schlafen", name:"Sea to Summit Spark", text:"Kompakter Daunenschlafsack für Sommer und Übergangszeit.", q:"Sea to Summit Spark Schlafsack"},
-    {cat:"Rucksäcke", name:"Osprey Exos 48", text:"Leichter Trekkingrucksack für mehrtägige Touren mit kleinem Gepäck.", q:"Osprey Exos 48"},
-    {cat:"Rucksäcke", name:"Deuter Aircontact", text:"Tragekomfort für schwerere Lasten, mit gut belüftetem Rücken.", q:"Deuter Aircontact Trekkingrucksack"},
-    {cat:"Kochen und Wasser", name:"Jetboil Flash", text:"Schneller Kocher mit integriertem Topf, ideal für Heissgetränke und Trekkingnahrung.", q:"Jetboil Flash"},
-    {cat:"Kochen und Wasser", name:"Sawyer Squeeze", text:"Leichter Wasserfilter für Bäche und Seen.", q:"Sawyer Squeeze Wasserfilter"},
-    {cat:"Licht", name:"Petzl Actik Core", text:"Wiederaufladbare Stirnlampe mit rotem Licht für das Nachtlager.", q:"Petzl Actik Core"}
+    {cat:"Zelte", name:"MSR Hubba Hubba NX 2", text:"Leichtes Zweipersonenzelt für Trekking, mit zwei Eingängen und Apsiden.", q:"MSR Hubba Hubba NX 2",
+      video:"FtGUIlaOux8", hersteller:"https://www.msrgear.com/tents/backpacking-tents/hubba-hubba-nx-2-person-backpacking-tent/10316.html"},
+    {cat:"Zelte", name:"Naturehike Cloud Up 2", text:"Günstiges Leichtzelt für zwei, gedacht für den Einstieg ins Trekking.", q:"Naturehike Cloud Up 2",
+      video:"kGHbZu5fgyw", hersteller:"https://www.naturehike.com/products/cloud-up-2-person-ultralight-backpacking-tent"},
+    {cat:"Schlafen", name:"Therm-a-Rest NeoAir XLite NXT", text:"Ultraleichte aufblasbare Isomatte mit hoher Wärmedämmung.", q:"Therm-a-Rest NeoAir XLite NXT",
+      video:"Iy62pAp9jFQ", hersteller:"https://www.thermarest.com/sleeping-pads/fast-and-light/neoair-xlite-nxt-sleeping-pad/neoair-xlite-nxt.html"},
+    {cat:"Schlafen", name:"Sea to Summit Spark", text:"Kompakter Daunenschlafsack für Sommer und Übergangszeit.", q:"Sea to Summit Spark Schlafsack",
+      video:"Aq7DzqcfujA", hersteller:"https://seatosummit.com/pages/spark-down-sleeping-bag"},
+    {cat:"Rucksäcke", name:"Osprey Exos 48", text:"Leichter Trekkingrucksack für mehrtägige Touren mit kleinem Gepäck.", q:"Osprey Exos 48",
+      video:"RZVrwXrgF1o", hersteller:"https://www.osprey.com/exos-48-2"},
+    {cat:"Rucksäcke", name:"Deuter Aircontact", text:"Tragekomfort für schwerere Lasten, mit gut belüftetem Rücken.", q:"Deuter Aircontact Trekkingrucksack",
+      video:"EVmRRLwGZpU", hersteller:"https://www.deuter.com/us-en/backpacks/aircontact/"},
+    {cat:"Kochen und Wasser", name:"Jetboil Flash", text:"Schneller Kocher mit integriertem Topf, ideal für Heissgetränke und Trekkingnahrung.", q:"Jetboil Flash",
+      video:"JhHmekJnMPg", hersteller:"https://jetboil.johnsonoutdoors.com"},
+    {cat:"Kochen und Wasser", name:"Sawyer Squeeze", text:"Leichter Wasserfilter für Bäche und Seen.", q:"Sawyer Squeeze Wasserfilter",
+      video:"-R_CTZeNgaI", hersteller:"https://www.sawyer.com/product/squeeze-water-filter-system"},
+    {cat:"Licht", name:"Petzl Actik Core", text:"Wiederaufladbare Stirnlampe mit rotem Licht für das Nachtlager.", q:"Petzl Actik Core",
+      video:"bREX9BFKLZM", hersteller:"https://www.petzl.com/US/en/Sport/Headlamps/ACTIK-CORE"}
   ];
   // ======= ENDE ANPASSEN =======
 
@@ -219,6 +240,18 @@
       const li = document.createElement("li");
       li.className = "item";
 
+      const thumb = document.createElement("a");
+      thumb.className = "thumb";
+      thumb.href = "https://www.youtube.com/watch?v=" + p.video;
+      thumb.target = "_blank";
+      thumb.rel = "noopener";
+      thumb.setAttribute("aria-label", "Testvideo zu " + p.name + " auf YouTube ansehen (öffnet neuen Tab)");
+      const img = document.createElement("img");
+      img.src = "https://img.youtube.com/vi/" + p.video + "/hqdefault.jpg";
+      img.alt = "Video-Vorschaubild: " + p.name;
+      img.loading = "lazy";
+      thumb.append(img);
+
       const cat = document.createElement("div");
       cat.className = "cat";
       cat.textContent = p.cat;
@@ -228,7 +261,10 @@
       h.textContent = p.name;
       const t = document.createElement("p");
       t.textContent = p.text;
-      body.append(h, t);
+      body.append(cat, h, t);
+
+      const actions = document.createElement("div");
+      actions.className = "actions";
 
       const a = document.createElement("a");
       a.className = "btn";
@@ -238,7 +274,22 @@
       a.textContent = "Bei Amazon ansehen";
       a.setAttribute("aria-label", p.name + " bei Amazon ansehen (Werbelink, öffnet neuen Tab)");
 
-      li.append(cat, body, a);
+      const h1 = document.createElement("a");
+      h1.className = "btn ghost small";
+      h1.href = p.hersteller;
+      h1.target = "_blank";
+      h1.rel = "noopener";
+      h1.textContent = "Hersteller";
+
+      const v1 = document.createElement("a");
+      v1.className = "btn ghost small";
+      v1.href = "https://www.youtube.com/watch?v=" + p.video;
+      v1.target = "_blank";
+      v1.rel = "noopener";
+      v1.textContent = "Video";
+
+      actions.append(a, h1, v1);
+      li.append(thumb, body, actions);
       listEl.append(li);
     });
   }
