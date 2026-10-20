@@ -1,0 +1,670 @@
+<!doctype html>
+<html lang="de-CH">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Advantic, Interaktive Packliste</title>
+<meta name="description" content="Interaktive Packliste für Tageswanderung, SAC-Hüttentour und Schneeschuhtour. Abhaken, fehlende Ausrüstung direkt vergleichen und beziehen.">
+<style>
+:root{
+  --bg:#f6f4ef; --card:#ffffff; --ink:#1d2421; --muted:#5d6762; --line:#dedad0;
+  --accent:#2e5e3e; --accent-ink:#ffffff; --chip:#e9e5da; --warn:#fff6dc;
+  --pflicht:#a3392b; --empfohlen:#2e5e3e; --optional:#6b6f8a;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#141816; --card:#1c211e; --ink:#e8ece9; --muted:#9aa5a0; --line:#2c332f;
+         --accent:#7fb38f; --accent-ink:#0f1411; --chip:#252b27; --warn:#2a2618;
+         --pflicht:#e0877a; --empfohlen:#7fb38f; --optional:#a6a9c4; }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+a{color:var(--accent)}
+.wrap{max-width:1120px;margin:0 auto;padding:0 16px}
+.notice{background:var(--warn);font-size:.85rem;padding:8px 0;border-bottom:1px solid var(--line)}
+header{border-bottom:1px solid var(--line)}
+nav{display:flex;justify-content:space-between;align-items:center;padding:14px 0;gap:12px;flex-wrap:wrap}
+.brand{font-weight:700;font-size:1.2rem;text-decoration:none;color:var(--ink)}
+nav .links a{margin-left:16px;text-decoration:none;color:var(--muted)}
+nav .links a:hover,nav .links a[aria-current]{color:var(--ink)}
+.hero{padding:48px 0 24px}
+.hero h1{font-size:clamp(1.8rem,4vw,2.6rem);line-height:1.15;margin:0 0 12px}
+.hero p{color:var(--muted);max-width:660px;margin:0}
+h2{font-size:1.5rem;margin:40px 0 8px}
+.sub{color:var(--muted);margin:0 0 20px}
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.chip{border:1px solid var(--line);background:var(--chip);color:var(--ink);border-radius:999px;padding:7px 14px;font:inherit;font-size:.9rem;cursor:pointer}
+.chip[aria-pressed="true"],.chip[aria-selected="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.search{width:100%;max-width:360px;padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:inherit;margin-bottom:20px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
+.thumb{aspect-ratio:16/9;background:var(--chip);display:flex;align-items:center;justify-content:center;position:relative;cursor:pointer;border:0;padding:0;width:100%;color:var(--muted);font:inherit}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb .play{position:absolute;width:54px;height:54px;border-radius:50%;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center}
+.thumb .play::after{content:"";border-left:16px solid #fff;border-top:10px solid transparent;border-bottom:10px solid transparent;margin-left:4px}
+.thumb.noimg{cursor:default;font-size:.85rem;flex-direction:column;gap:6px}
+.thumb.noimg .ico{font-size:2rem}
+.thumb iframe{width:100%;height:100%;border:0}
+.body{padding:14px 16px 16px;display:flex;flex-direction:column;gap:8px;flex:1}
+.cat{font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.card h3{margin:0;font-size:1.08rem}
+.card p{margin:0;color:var(--muted);font-size:.93rem}
+.vnote{font-size:.78rem;color:var(--muted);font-style:italic}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.tag{font-size:.75rem;background:var(--chip);border-radius:6px;padding:2px 8px}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:auto;padding-top:6px}
+.btn{display:inline-block;text-decoration:none;font:inherit;font-size:.88rem;padding:8px 12px;border-radius:8px;border:1px solid var(--line);color:var(--ink);background:transparent;cursor:pointer}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn .price{font-weight:600}
+.empty{color:var(--muted);padding:24px 0}
+.guide{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.guide article{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;display:flex;flex-direction:column}
+.guide h3{margin:0 0 8px;font-size:1.1rem}
+.guide p,.guide li{color:var(--muted);font-size:.95rem}
+.guide ul{padding-left:18px;margin:8px 0 12px}
+.guide .btn{align-self:flex-start;margin-top:auto}
+.pricenote{font-size:.8rem;color:var(--muted);margin-top:16px}
+footer{margin-top:56px;border-top:1px solid var(--line);padding:24px 0 40px;color:var(--muted);font-size:.88rem}
+footer a{color:var(--muted);margin-right:16px}
+</style>
+<style>
+.tabs{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 16px}
+.toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;margin-bottom:20px}
+.toolbar label{display:flex;align-items:center;gap:8px;font-size:.92rem;color:var(--muted);cursor:pointer}
+.progress{flex:1;min-width:200px}
+.progress .bar{height:8px;background:var(--chip);border-radius:99px;overflow:hidden}
+.progress .bar span{display:block;height:100%;background:var(--accent);width:0;transition:width .25s}
+.progress .lbl{font-size:.82rem;color:var(--muted);margin-top:4px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:24px;align-items:start}
+@media (max-width:900px){.layout{grid-template-columns:1fr}}
+.section{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-bottom:16px;overflow:hidden}
+.section h3{margin:0;padding:12px 16px;font-size:1rem;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:8px}
+.section h3 small{color:var(--muted);font-weight:400}
+.item{display:grid;grid-template-columns:28px minmax(0,1fr);gap:4px 10px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.item:last-child{border-bottom:0}
+.item input[type=checkbox]{width:20px;height:20px;margin:2px 0 0;accent-color:var(--accent);cursor:pointer}
+.item .name{font-weight:600;cursor:pointer}
+.item.done .name{text-decoration:line-through;color:var(--muted)}
+.badge{display:inline-block;font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;border:1px solid currentColor;border-radius:5px;padding:0 6px;margin-left:8px;vertical-align:2px}
+.badge.pflicht{color:var(--pflicht)} .badge.empfohlen{color:var(--empfohlen)} .badge.optional{color:var(--optional)}
+.item .note{grid-column:2;font-size:.88rem;color:var(--muted)}
+.item .shop{grid-column:2;display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:6px}
+.item select{font:inherit;font-size:.88rem;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);max-width:100%}
+.item .from{font-size:.85rem;color:var(--muted)}
+.item .from b{color:var(--ink)}
+.item .vid{font-size:.85rem}
+.btn.toggle[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+aside{position:sticky;top:16px}
+.cart{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+.cart h3{margin:0 0 4px;font-size:1.1rem}
+.cart .sub{margin:0 0 12px;font-size:.88rem}
+.cart ul{list-style:none;padding:0;margin:0}
+.cart li{padding:10px 0;border-top:1px solid var(--line)}
+.cart li .row{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.cart li .pname{font-weight:600;font-size:.93rem}
+.cart li .for{font-size:.8rem;color:var(--muted)}
+.cart li .btns{padding-top:6px}
+.cart li .btn{font-size:.8rem;padding:5px 9px}
+.cart .x{border:0;background:none;color:var(--muted);cursor:pointer;font-size:1.1rem;line-height:1}
+.cart .total{border-top:2px solid var(--line);margin-top:6px;padding-top:10px;font-size:.92rem}
+.cart .total div{display:flex;justify-content:space-between}
+.cart .empty{padding:8px 0;font-size:.9rem}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}
+.modal .box{width:min(900px,100%);aspect-ratio:16/9;background:#000;border-radius:10px;overflow:hidden;position:relative}
+.modal iframe{width:100%;height:100%;border:0}
+.modal .close{position:absolute;top:-40px;right:0;background:none;border:0;color:#fff;font-size:1.6rem;cursor:pointer}
+@media print{
+  .notice,header,footer,.toolbar,.tabs,.shop,aside .actions,.hero p,.cart .btns,.cart .x{display:none!important}
+  body{background:#fff;color:#000}
+  .layout{grid-template-columns:1fr}
+  aside{position:static}
+  .section,.cart{border-color:#999;break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<div class="notice"><div class="wrap">Werbehinweis: Diese Seite enthält Partnerlinks (Amazon und Schweizer Shops). Kaufst du über einen Link, erhalte ich eine Provision, für dich ändert sich der Preis nicht.</div></div>
+
+<header><div class="wrap"><nav>
+  <a class="brand" href="index.html">Advantic</a>
+  <div class="links"><a href="bergtouren.html#empfehlungen">Empfehlungen</a><a href="bergtouren.html#ratgeber">Ratgeber</a><a href="packliste.html" aria-current="page">Packliste</a></div>
+</nav></div></header>
+
+<main class="wrap">
+  <section class="hero">
+    <h1 id="title">Interaktive Packliste</h1>
+    <p>Wähle deine Tour, hake ab, was schon im Rucksack ist, und setze fehlende Ausrüstung auf deine Einkaufsliste. Dein Fortschritt bleibt in diesem Browser gespeichert.</p>
+  </section>
+
+  <div class="tabs" id="tabs" role="tablist" aria-label="Tourentyp"></div>
+
+  <div class="toolbar">
+    <div class="progress"><div class="bar"><span id="bar"></span></div><div class="lbl" id="progress"></div></div>
+    <label><input type="checkbox" id="showOptional"> Optionale Artikel zeigen</label>
+  </div>
+
+  <div class="layout">
+    <div id="list"></div>
+    <aside>
+      <div class="cart">
+        <h3>Deine Einkaufsliste</h3>
+        <p class="sub">Was dir noch fehlt, mit dem aktuell günstigsten Angebot.</p>
+        <ul id="cart"></ul>
+        <div class="total" id="total"></div>
+        <p class="pricenote" id="pricenote"></p>
+        <div class="actions">
+          <button class="btn" id="print">Drucken</button>
+          <button class="btn" id="reset">Zurücksetzen</button>
+        </div>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<footer><div class="wrap">
+  <a href="impressum.html">Impressum</a><a href="datenschutz.html">Datenschutz</a>
+</div></footer>
+
+<!-- Optionale Preisdatei: wird automatisch aktualisiert (n8n). Fehlt sie, zeigt die Seite "Preise beim Händler". -->
+<script src="prices.js" onerror="this.remove()"></script>
+<script>
+window.ADVANTIC_PRICES = window.ADVANTIC_PRICES || { items: {} };
+/* =========================================================
+   Advantic – gemeinsame Produktdaten für alle Unterseiten
+   Wird von bergtouren.html und packliste.html geladen.
+   ========================================================= */
+
+/* 1) KONFIGURATION – Partner-IDs eintragen.
+   Leere Werte = der jeweilige Button und Preis werden ausgeblendet. */
+const CONFIG = {
+  amazon: {
+    domain: "www.amazon.de",
+    tag: "DEIN-TAG-21",
+    maxPriceAgeHours: 24        // Amazon verlangt: Preise höchstens 24 h alt, mit Zeitstempel
+  },
+  bergfreunde: {                // berg-freunde.ch, Partnerprogramm über Awin
+    awinMid: "",
+    awinAffId: "",
+    base: "https://www.berg-freunde.ch",
+    maxPriceAgeHours: 72
+  },
+  galaxus: {                    // Partnerprogramm über Tradedoubler (CH-Zulassung vorher klären)
+    tdProgram: "",
+    tdAffiliate: "",
+    base: "https://www.galaxus.ch",
+    maxPriceAgeHours: 72
+  }
+};
+
+/* 2) KATEGORIEN */
+const CATEGORIES = {
+  nav:     { label: "Navigation & Sicherheit", icon: "🧭" },
+  huette:  { label: "Hüttentour",               icon: "🏔️" },
+  schuhe:  { label: "Wanderschuhe",             icon: "🥾" },
+  kleid:   { label: "Bekleidung",               icon: "🧥" },
+  rucksack:{ label: "Rucksack & Trinken",       icon: "🎒" },
+  wasser:  { label: "Wasserfilter",             icon: "💧" },
+  notfall: { label: "Erste Hilfe & Strom",      icon: "🩹" },
+  winter:  { label: "Wintertouren",             icon: "❄️" }
+};
+
+/* 3) PRODUKTE
+   id:       eindeutiger Schlüssel (wird von Packliste und prices.js verwendet)
+   asin:     Amazon-ASIN, leer = Suchlink mit deinem Tag
+   youtube:  ID eines unabhängigen Testvideos
+   videoNote: Hinweis, wenn das Video ein verwandtes Modell zeigt */
+const PRODUCTS = [
+  // Navigation & Sicherheit
+  { id:"garmin-fenix-8", cat:"nav", name:"Garmin fēnix 8", asin:"", youtube:"KuGKjbcrGcU", maker:"https://www.garmin.com/de-CH/",
+    text:"Multisport-Uhr mit Topo-Karten und Track-Navigation für lange Touren. Lohnt sich, wenn du die Uhr täglich und am Berg nutzt.",
+    tags:["GPS-Uhr","Karten","Premium"], shop:{bergfreunde:"garmin fenix 8", galaxus:"garmin fenix 8"} },
+  { id:"garmin-instinct-3", cat:"nav", name:"Garmin Instinct 3", asin:"", youtube:"wU1kvs8SVD0", maker:"https://www.garmin.com/de-CH/",
+    text:"Robuste Outdoor-Uhr mit langer Akkulaufzeit. Gute Wahl, wenn du Navigation willst, aber nicht den Preis einer Premium-Uhr.",
+    tags:["GPS-Uhr","Robust"], shop:{bergfreunde:"garmin instinct 3", galaxus:"garmin instinct 3"} },
+  { id:"coros-vertix-2s", cat:"nav", name:"Coros Vertix 2S", asin:"", youtube:"nptxlIzqQqA", maker:"https://coros.com/",
+    text:"Alternative zu Garmin mit Fokus auf Akkulaufzeit und Bergsport. Interessant für Mehrtagestouren ohne Ladegelegenheit.",
+    tags:["GPS-Uhr","Akku"], shop:{bergfreunde:"coros vertix", galaxus:"coros vertix 2s"} },
+  { id:"inreach-mini-2", cat:"nav", name:"Garmin inReach Mini 2", asin:"", youtube:"nMhirl5IgRY", maker:"https://www.garmin.com/de-CH/",
+    text:"Kompakter Satelliten-Messenger mit SOS-Funktion und Textnachrichten ohne Handynetz. Funktioniert nur mit Abo.",
+    tags:["Satellit","SOS","Abo nötig"], shop:{bergfreunde:"inreach mini 2", galaxus:"garmin inreach mini 2"} },
+  { id:"inreach-messenger-plus", cat:"nav", name:"Garmin inReach Messenger Plus", asin:"", youtube:"jl8gAQUHMgo", maker:"https://www.garmin.com/de-CH/",
+    text:"Satelliten-Messenger, der mit dem Smartphone gekoppelt wird. Praktisch, wenn du lieber in einer App schreibst. Abo nötig.",
+    tags:["Satellit","SOS","Abo nötig"], shop:{bergfreunde:"inreach messenger", galaxus:"garmin inreach messenger plus"} },
+  { id:"zoleo", cat:"nav", name:"Zoleo Satellite Communicator", asin:"", youtube:"43MUDAAJyD4", maker:"https://www.zoleo.com/",
+    text:"Alternative zu Garmin inReach mit eigener App und SOS-Funktion. Vor dem Kauf die Abo-Konditionen für die Schweiz prüfen.",
+    tags:["Satellit","SOS","Abo nötig"], shop:{galaxus:"zoleo"} },
+  { id:"garmin-gpsmap-67", cat:"nav", name:"Garmin GPSMAP 67", asin:"", youtube:"rT7SB-upjcA", maker:"https://www.garmin.com/de-CH/",
+    text:"Klassisches GPS-Handgerät mit Tasten, gut mit Handschuhen bedienbar. Für alle, die keine Uhr am Handgelenk wollen.",
+    tags:["Handgerät","Robust"], shop:{bergfreunde:"gpsmap 67", galaxus:"garmin gpsmap 67"} },
+
+  // Hüttentour
+  { id:"cocoon-huettenschlafsack", cat:"huette", name:"Cocoon Hüttenschlafsack (Seide oder Baumwolle)", asin:"", youtube:"oyjnRRdxzOE", maker:"https://www.designsalt.com/",
+    text:"In SAC-Hütten Pflicht. Seide ist leichter und kleiner verpackt, Baumwolle günstiger und robuster.",
+    tags:["Pflicht in SAC-Hütten","Leicht"], shop:{bergfreunde:"cocoon hüttenschlafsack", galaxus:"cocoon reiseschlafsack"} },
+  { id:"s2s-silk-liner", cat:"huette", name:"Sea to Summit Silk Liner", asin:"", youtube:"B6giFFa4L04", maker:"https://seatosummit.com/",
+    text:"Leichter Inlett-Schlafsack aus Seide, passt in jede Jackentasche. Gute Alternative zum Cocoon.",
+    tags:["Hüttenschlafsack","Seide"], shop:{bergfreunde:"sea to summit silk liner", galaxus:"sea to summit liner"} },
+  { id:"petzl-actik-core", cat:"huette", name:"Petzl Actik Core", asin:"", youtube:"W2z0AZ8P9LU", maker:"https://www.petzl.com/CH/de",
+    text:"Stirnlampe mit Akku, auch mit AAA-Batterien betreibbar. Mit Rotlicht, damit du im Lager niemanden weckst.",
+    tags:["Stirnlampe","Rotlicht"], shop:{bergfreunde:"petzl actik core", galaxus:"petzl actik core"} },
+  { id:"ohropax-classic", cat:"huette", name:"Ohropax Classic Ohrstöpsel", asin:"", youtube:"", maker:"https://www.ohropax.de/",
+    text:"Wachs-Ohrstöpsel für ruhige Nächte im Massenlager. Klein, günstig und oft der beste Kauf vor der ersten Hüttennacht.",
+    tags:["Schlaf","Günstig"], shop:{galaxus:"ohropax classic"} },
+  { id:"s2s-drylite-towel", cat:"huette", name:"Sea to Summit DryLite Towel", asin:"", youtube:"AIxAMHjjFDc", maker:"https://seatosummit.com/",
+    text:"Leichtes Mikrofaser-Tuch, trocknet schnell. Praktisch, wenn die Hütte eine Waschgelegenheit hat.",
+    tags:["Hygiene","Leicht"], shop:{bergfreunde:"sea to summit drylite towel", galaxus:"sea to summit drylite"} },
+  { id:"bd-distance-carbon-z", cat:"huette", name:"Black Diamond Distance Carbon Z", asin:"", youtube:"-sDmGDpOl7k", maker:"https://www.blackdiamondequipment.com/",
+    text:"Leichte Faltstöcke, die klein am Rucksack verschwinden. Entlasten die Knie im Abstieg.",
+    tags:["Wanderstöcke","Faltbar"], shop:{bergfreunde:"distance carbon z", galaxus:"black diamond distance carbon z"} },
+  { id:"snowline-chainsen-pro", cat:"huette", name:"Snowline Chainsen Pro", asin:"", youtube:"ZMqkkJlpWlM", videoNote:"Video zeigt die Variante Chainsen Pro XT", maker:"https://www.snowline.com/",
+    text:"Grödel für vereiste Wege im Herbst und Frühling. Ersetzen keine Steigeisen auf dem Gletscher.",
+    tags:["Grödel","Herbst"], shop:{bergfreunde:"snowline chainsen", galaxus:"snowline chainsen pro"} },
+
+  // Wanderschuhe
+  { id:"lowa-renegade-gtx-mid", cat:"schuhe", name:"Lowa Renegade GTX Mid", asin:"", youtube:"wysN57M0A6U", maker:"https://www.lowa.ch/",
+    text:"Bewährter Allround-Wanderschuh mit Gore-Tex. Guter Kompromiss aus Halt, Komfort und Gewicht für T1 bis T3.",
+    tags:["Allround","Wasserdicht"], shop:{bergfreunde:"lowa renegade gtx mid", galaxus:"lowa renegade gtx mid"} },
+  { id:"salomon-x-ultra-4-mid", cat:"schuhe", name:"Salomon X Ultra 4 Mid GTX", asin:"", youtube:"K5LHNSil1Dw", maker:"https://www.salomon.com/de-ch",
+    text:"Leichter, sportlicher Wanderschuh. Für alle, die schnell unterwegs sind und wenig Gewicht am Fuss wollen.",
+    tags:["Leicht","Wasserdicht"], shop:{bergfreunde:"salomon x ultra 4 mid", galaxus:"salomon x ultra 4 mid gtx"} },
+  { id:"hanwag-banks-gtx", cat:"schuhe", name:"Hanwag Banks GTX", asin:"", youtube:"UjFZsgPS7Bw", maker:"https://www.hanwag.com/",
+    text:"Komfortabler Trekkingschuh mit gutem Halt für längere Touren mit schwererem Rucksack.",
+    tags:["Trekking","Komfort"], shop:{bergfreunde:"hanwag banks gtx", galaxus:"hanwag banks gtx"} },
+
+  // Bekleidung
+  { id:"patagonia-torrentshell-3l", cat:"kleid", name:"Patagonia Torrentshell 3L", asin:"", youtube:"IjZAfaNDX68", maker:"https://eu.patagonia.com/ch/de/",
+    text:"Wetterfeste Regenjacke für Wanderungen und Hüttentouren. Die äusserste Schicht im Schichtenprinzip.",
+    tags:["Hardshell","Regen"], shop:{bergfreunde:"patagonia torrentshell", galaxus:"patagonia torrentshell 3l"} },
+  { id:"patagonia-r1", cat:"kleid", name:"Patagonia R1 Fleece", asin:"", youtube:"q2PqYBi2FMI", videoNote:"Video zeigt die Variante R1 Thermal", maker:"https://eu.patagonia.com/ch/de/",
+    text:"Atmungsaktive Zwischenschicht für Aufstiege. Wärmt, ohne dass du darunter schwitzt.",
+    tags:["Fleece","Midlayer"], shop:{bergfreunde:"patagonia r1", galaxus:"patagonia r1"} },
+  { id:"rab-microlight-alpine", cat:"kleid", name:"Rab Microlight Alpine", asin:"", youtube:"d3hQLH7_sYM", maker:"https://rab.equipment/",
+    text:"Leichte Daunenjacke für Pausen und den Abend vor der Hütte. Klein verpackt, viel Wärme.",
+    tags:["Daune","Isolation"], shop:{bergfreunde:"rab microlight alpine", galaxus:"rab microlight alpine"} },
+  { id:"icebreaker-200-oasis", cat:"kleid", name:"Icebreaker Merino 200 Oasis", asin:"", youtube:"gSWNfHupS-I", maker:"https://www.icebreaker.com/",
+    text:"Merino-Langarmshirt als Basisschicht. Riecht auch nach zwei Tagen kaum, ideal als Wechselshirt für die Hütte.",
+    tags:["Merino","Baselayer"], shop:{bergfreunde:"icebreaker 200 oasis", galaxus:"icebreaker oasis"} },
+
+  // Rucksack & Trinken
+  { id:"osprey-talon-33", cat:"rucksack", name:"Osprey Talon 33", asin:"", youtube:"8ajqXNGToEA", maker:"https://www.osprey.com/",
+    text:"Leichter Tagesrucksack mit gutem Tragesystem. Das Volumen reicht für eine Hüttennacht im Sommer.",
+    tags:["Tagesrucksack","Leicht"], shop:{bergfreunde:"osprey talon 33", galaxus:"osprey talon 33"} },
+  { id:"deuter-futura-32", cat:"rucksack", name:"Deuter Futura 32", asin:"", youtube:"6HcKUQd4ke4", maker:"https://www.deuter.com/ch-de/",
+    text:"Rucksack mit Netzrücken für gute Belüftung. Bequem, wenn du am Rücken schnell schwitzt.",
+    tags:["Tagesrucksack","Belüftung"], shop:{bergfreunde:"deuter futura 32", galaxus:"deuter futura 32"} },
+  { id:"nalgene-wide-mouth-1l", cat:"rucksack", name:"Nalgene Wide Mouth 1 l", asin:"", youtube:"", maker:"https://nalgene.com/",
+    text:"Praktisch unzerstörbare Trinkflasche mit weiter Öffnung. Lässt sich in der Hütte auch mit heissem Tee füllen.",
+    tags:["Trinkflasche","Robust"], shop:{bergfreunde:"nalgene wide mouth", galaxus:"nalgene wide mouth 1l"} },
+
+  // Wasserfilter
+  { id:"sawyer-squeeze", cat:"wasser", name:"Sawyer Squeeze", asin:"", youtube:"_SbbN6YiAwE", maker:"https://www.sawyer.com/",
+    text:"Leichter Wasserfilter zum Aufschrauben auf Beutel oder Flaschen. Ideal für Mehrtagestouren.",
+    tags:["Filter","Leicht"], shop:{bergfreunde:"sawyer squeeze", galaxus:"sawyer squeeze"} },
+  { id:"katadyn-befree", cat:"wasser", name:"Katadyn BeFree", asin:"", youtube:"AxpsxBIJBHE", maker:"https://www.katadyn.com/ch/de",
+    text:"Faltbare Trinkflasche mit integriertem Filter. Schnell im Durchfluss, sehr einfach zu bedienen.",
+    tags:["Filter","Faltbar"], shop:{bergfreunde:"katadyn befree", galaxus:"katadyn befree"} },
+
+  // Erste Hilfe & Strom
+  { id:"deuter-first-aid-kit", cat:"notfall", name:"Deuter First Aid Kit", asin:"", youtube:"z5I4l3KFdjs", maker:"https://www.deuter.com/ch-de/",
+    text:"Kompaktes Erste-Hilfe-Set für den Tagesrucksack. Prüfe den Inhalt vor der Saison und ergänze persönliche Medikamente.",
+    tags:["Erste Hilfe","Kompakt"], shop:{bergfreunde:"deuter first aid kit", galaxus:"deuter first aid kit"} },
+  { id:"sol-emergency-bivvy", cat:"notfall", name:"SOL Emergency Bivvy", asin:"", youtube:"I1l2UPmHkus", maker:"https://www.surviveoutdoorslonger.com/",
+    text:"Leichter Notbiwaksack, der bei einem unfreiwilligen Halt vor Auskühlung schützt. Gehört in jeden Rucksack.",
+    tags:["Notfall","Leicht"], shop:{bergfreunde:"sol bivvy", galaxus:"sol emergency bivvy"} },
+  { id:"nitecore-nb10000", cat:"notfall", name:"Nitecore NB10000 Gen 2", asin:"", youtube:"MxmTPd8PnfE", maker:"https://flashlight.nitecore.com/",
+    text:"Leichte Powerbank, die GPS-Uhr, Messenger und Smartphone über mehrere Tage am Leben hält.",
+    tags:["Powerbank","Leicht"], shop:{bergfreunde:"nitecore nb10000", galaxus:"nitecore nb10000"} },
+
+  // Wintertouren
+  { id:"msr-lightning-ascent", cat:"winter", name:"MSR Lightning Ascent", asin:"", youtube:"YXO3H0wLqo0", maker:"https://www.msrgear.com/",
+    text:"Schneeschuh mit Steighilfe und gutem Biss auf hartem Schnee. Für anspruchsvollere Winterwanderungen.",
+    tags:["Schneeschuh","Steighilfe"], shop:{bergfreunde:"msr lightning ascent", galaxus:"msr lightning ascent"} },
+  { id:"tsl-symbioz", cat:"winter", name:"TSL Symbioz", asin:"", youtube:"ka8n_kD4qJ4", maker:"https://www.tsloutdoor.com/",
+    text:"Flexibler Schneeschuh, der sich natürlich abrollt. Angenehm auf langen, flacheren Strecken.",
+    tags:["Schneeschuh","Komfort"], shop:{bergfreunde:"tsl symbioz", galaxus:"tsl symbioz"} },
+  { id:"mammut-barryvox-s", cat:"winter", name:"Mammut Barryvox S", asin:"", youtube:"f8lZO3WlbTo", maker:"https://www.mammut.com/ch/de",
+    text:"LVS-Gerät aus der Schweiz. Nur sinnvoll zusammen mit Schaufel, Sonde und einem Lawinenkurs.",
+    tags:["LVS","Lawine"], shop:{bergfreunde:"barryvox s", galaxus:"mammut barryvox s"} },
+  { id:"ortovox-diract-voice", cat:"winter", name:"Ortovox Diract Voice", asin:"", youtube:"dicxIuUhl9M", maker:"https://www.ortovox.com/ch-de",
+    text:"LVS-Gerät mit Sprachführung bei der Suche. Auch hier gilt: Ausbildung ist wichtiger als das Gerät.",
+    tags:["LVS","Sprachführung"], shop:{bergfreunde:"ortovox diract", galaxus:"ortovox diract voice"} }
+];
+const PRODUCT_BY_ID = Object.fromEntries(PRODUCTS.map(p => [p.id, p]));
+
+/* 4) LINK-BUILDER */
+function amazonLink(p){
+  const {domain, tag} = CONFIG.amazon;
+  if (!tag) return "";
+  return p.asin
+    ? `https://${domain}/dp/${encodeURIComponent(p.asin)}?tag=${encodeURIComponent(tag)}`
+    : `https://${domain}/s?k=${encodeURIComponent(p.name)}&tag=${encodeURIComponent(tag)}`;
+}
+function shopTarget(base, value){
+  if (!value) return "";
+  return value.startsWith("/") ? base + value : `${base}/search?q=${encodeURIComponent(value)}`;
+}
+function bergfreundeLink(p){
+  const c = CONFIG.bergfreunde, t = shopTarget(c.base, p.shop && p.shop.bergfreunde);
+  if (!t || !c.awinMid || !c.awinAffId) return "";
+  return `https://www.awin1.com/cread.php?awinmid=${c.awinMid}&awinaffid=${c.awinAffId}&ued=${encodeURIComponent(t)}`;
+}
+function galaxusLink(p){
+  const c = CONFIG.galaxus, t = shopTarget(c.base, p.shop && p.shop.galaxus);
+  if (!t || !c.tdProgram || !c.tdAffiliate) return "";
+  return `https://clk.tradedoubler.com/click?p=${c.tdProgram}&a=${c.tdAffiliate}&url=${encodeURIComponent(t)}`;
+}
+const SOURCES = [
+  { key:"amazon",      label:"Amazon",         link: amazonLink },
+  { key:"bergfreunde", label:"Bergfreunde.ch", link: bergfreundeLink },
+  { key:"galaxus",     label:"Galaxus",        link: galaxusLink }
+];
+
+/* 5) PREISE
+   Preise kommen ausschliesslich aus prices.js (window.ADVANTIC_PRICES),
+   die automatisch befüllt wird (Amazon PA API, Awin-/Tradedoubler-Feeds).
+   Ein Preis wird nur angezeigt, wenn ein Partnerlink existiert und der
+   Preis nicht älter ist als maxPriceAgeHours. */
+function priceFor(productId, sourceKey){
+  const data = (window.ADVANTIC_PRICES && window.ADVANTIC_PRICES.items) || {};
+  const entry = data[productId] && data[productId][sourceKey];
+  if (!entry || typeof entry.value !== "number" || !entry.updated) return null;
+  const p = PRODUCT_BY_ID[productId];
+  const src = SOURCES.find(s => s.key === sourceKey);
+  if (!p || !src || !src.link(p)) return null;
+  const ageH = (Date.now() - new Date(entry.updated).getTime()) / 36e5;
+  if (!(ageH >= 0) || ageH > CONFIG[sourceKey].maxPriceAgeHours) return null;
+  return { value: entry.value, currency: entry.currency || "CHF", updated: new Date(entry.updated) };
+}
+function offersFor(p){
+  return SOURCES.map(s => ({ ...s, href: s.link(p), price: priceFor(p.id, s.key) }))
+                .filter(o => o.href);
+}
+function cheapest(p){
+  return offersFor(p).filter(o => o.price)
+    .sort((a, b) => a.price.currency === b.price.currency ? a.price.value - b.price.value : 0)[0] || null;
+}
+const fmtMoney = (v, cur) => new Intl.NumberFormat("de-CH", { style: "currency", currency: cur }).format(v);
+const fmtStamp = d => d.toLocaleString("de-CH", { day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit" });
+
+/* 6) DOM-HELFER */
+function el(tag, attrs = {}, ...kids){
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (v == null || v === false) continue;
+    if (k === "class") n.className = v;
+    else if (k.startsWith("on")) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v === true ? "" : v);
+  }
+  kids.flat().forEach(k => k != null && k !== false && n.append(k));
+  return n;
+}
+function videoThumb(p){
+  const c = CATEGORIES[p.cat];
+  if (!p.youtube) return el("div", {class:"thumb noimg"}, el("span", {class:"ico", "aria-hidden":"true"}, c.icon), "Testvideo folgt");
+  const btn = el("button", {class:"thumb", "aria-label":`Testvideo zu ${p.name} abspielen`},
+    el("img", {src:`https://i.ytimg.com/vi/${p.youtube}/hqdefault.jpg`, alt:"", loading:"lazy"}),
+    el("span", {class:"play", "aria-hidden":"true"}));
+  btn.addEventListener("click", () => btn.replaceWith(el("div", {class:"thumb"},
+    el("iframe", {src:`https://www.youtube-nocookie.com/embed/${p.youtube}?autoplay=1`,
+      title:`Testvideo ${p.name}`, allow:"autoplay; encrypted-media", allowfullscreen:true}))));
+  return btn;
+}
+function offerButtons(p, {compact = false} = {}){
+  const best = cheapest(p);
+  const btns = offersFor(p).map(o => el("a", {
+      class: "btn" + (best && best.key === o.key ? " primary" : (!best && o.key === "amazon" ? " primary" : "")),
+      href:o.href, target:"_blank", rel:"sponsored noopener"},
+    o.label, o.price ? el("span", {class:"price"}, " " + fmtMoney(o.price.value, o.price.currency)) : null));
+  if (!compact && p.maker) btns.push(el("a", {class:"btn", href:p.maker, target:"_blank", rel:"noopener"}, "Hersteller"));
+  return btns;
+}
+function priceNote(){
+  const all = PRODUCTS.flatMap(p => SOURCES.map(s => priceFor(p.id, s.key))).filter(Boolean);
+  if (!all.length) return "Preise und Verfügbarkeit siehst du direkt beim Händler.";
+  const newest = new Date(Math.max(...all.map(x => x.updated.getTime())));
+  return `Preise inkl. MwSt., zzgl. allfälliger Versandkosten, Stand ${fmtStamp(newest)}. Preise und Verfügbarkeit können sich seither geändert haben; massgebend ist der Preis beim Händler zum Zeitpunkt des Kaufs. Amazon-Preise in EUR (amazon.de).`;
+}
+</script>
+<script>
+/* =========================================================
+   PACKLISTEN
+   level: pflicht | empfohlen | optional
+   products: IDs aus products.js (erstes = Vorauswahl)
+   ========================================================= */
+const TOURS = {
+  tages: {
+    label: "Tageswanderung",
+    title: "Packliste Tageswanderung",
+    sections: [
+      { title: "Rucksack & Orientierung", items: [
+        { id:"rucksack", label:"Tagesrucksack 20–35 l", level:"empfohlen", products:["osprey-talon-33","deuter-futura-32"] },
+        { id:"karte", label:"Karte oder Karten-App offline", level:"pflicht", note:"Die swisstopo-App ist kostenlos. Lade die Karten vorab herunter." },
+        { id:"gps-uhr", label:"GPS-Uhr", level:"optional", products:["garmin-instinct-3","garmin-fenix-8","coros-vertix-2s"] },
+        { id:"powerbank", label:"Powerbank", level:"optional", products:["nitecore-nb10000"] }
+      ]},
+      { title: "Bekleidung", items: [
+        { id:"schuhe", label:"Wanderschuhe", level:"pflicht", products:["lowa-renegade-gtx-mid","salomon-x-ultra-4-mid","hanwag-banks-gtx"] },
+        { id:"regenjacke", label:"Regenjacke", level:"pflicht", products:["patagonia-torrentshell-3l"] },
+        { id:"fleece", label:"Warme Zwischenschicht", level:"empfohlen", products:["patagonia-r1"] },
+        { id:"sonne", label:"Sonnenbrille, Sonnencreme, Kappe", level:"pflicht" }
+      ]},
+      { title: "Sicherheit & Verpflegung", items: [
+        { id:"erste-hilfe", label:"Erste-Hilfe-Set", level:"pflicht", products:["deuter-first-aid-kit"] },
+        { id:"trinken", label:"Trinkflasche (mind. 1 l)", level:"pflicht", products:["nalgene-wide-mouth-1l"] },
+        { id:"stoecke", label:"Wanderstöcke", level:"empfohlen", products:["bd-distance-carbon-z"] },
+        { id:"notbiwak", label:"Notbiwaksack", level:"optional", products:["sol-emergency-bivvy"] },
+        { id:"proviant", label:"Proviant und Snacks", level:"pflicht" },
+        { id:"handy", label:"Geladenes Handy, Notruf 1414 (Rega) und 112 eingespeichert", level:"pflicht" }
+      ]}
+    ]
+  },
+  huette: {
+    label: "SAC-Hüttentour",
+    title: "Packliste SAC-Hüttentour (2 Tage)",
+    sections: [
+      { title: "Rucksack & Orientierung", items: [
+        { id:"rucksack", label:"Rucksack 25–35 l", level:"pflicht", products:["osprey-talon-33","deuter-futura-32"] },
+        { id:"karte", label:"Karte oder Karten-App offline", level:"pflicht", note:"Die swisstopo-App ist kostenlos. Lade die Karten vorab herunter." },
+        { id:"powerbank", label:"Powerbank", level:"empfohlen", products:["nitecore-nb10000"], note:"Strom ist in vielen Hütten knapp oder kostenpflichtig." },
+        { id:"gps-uhr", label:"GPS-Uhr", level:"optional", products:["garmin-instinct-3","garmin-fenix-8","coros-vertix-2s"] },
+        { id:"messenger", label:"Satelliten-Messenger", level:"optional", products:["inreach-mini-2","inreach-messenger-plus","zoleo"], note:"Sinnvoll bei abgelegenen Hütten ohne Handynetz. Abo nötig." }
+      ]},
+      { title: "Schlafen in der Hütte", items: [
+        { id:"schlafsack", label:"Hüttenschlafsack", level:"pflicht", products:["cocoon-huettenschlafsack","s2s-silk-liner"], note:"In SAC-Hütten Pflicht, Decken und Kissen sind vorhanden." },
+        { id:"stirnlampe", label:"Stirnlampe", level:"pflicht", products:["petzl-actik-core"] },
+        { id:"ohrstoepsel", label:"Ohrstöpsel", level:"empfohlen", products:["ohropax-classic"] },
+        { id:"tuch", label:"Mikrofaser-Tuch", level:"optional", products:["s2s-drylite-towel"] },
+        { id:"hygiene", label:"Zahnbürste und kleine Hygieneartikel", level:"pflicht" },
+        { id:"huettenschuhe", label:"Hüttenschuhe", level:"optional", note:"Stehen in den meisten SAC-Hütten bereit." }
+      ]},
+      { title: "Bekleidung", items: [
+        { id:"schuhe", label:"Wanderschuhe", level:"pflicht", products:["lowa-renegade-gtx-mid","salomon-x-ultra-4-mid","hanwag-banks-gtx"] },
+        { id:"regenjacke", label:"Regenjacke", level:"pflicht", products:["patagonia-torrentshell-3l"] },
+        { id:"fleece", label:"Warme Zwischenschicht", level:"pflicht", products:["patagonia-r1"] },
+        { id:"wechselshirt", label:"Wechselshirt für den Abend", level:"empfohlen", products:["icebreaker-200-oasis"] },
+        { id:"daune", label:"Daunenjacke", level:"optional", products:["rab-microlight-alpine"], note:"Abends vor der Hütte und bei frühen Starts angenehm." },
+        { id:"muetze", label:"Mütze und Handschuhe", level:"empfohlen", note:"Auch im Sommer kann es auf über 2500 m kalt werden." },
+        { id:"sonne", label:"Sonnenbrille, Sonnencreme, Kappe", level:"pflicht" }
+      ]},
+      { title: "Sicherheit & Verpflegung", items: [
+        { id:"erste-hilfe", label:"Erste-Hilfe-Set", level:"pflicht", products:["deuter-first-aid-kit"] },
+        { id:"notbiwak", label:"Notbiwaksack", level:"empfohlen", products:["sol-emergency-bivvy"] },
+        { id:"trinken", label:"Trinkflasche (mind. 1 l)", level:"pflicht", products:["nalgene-wide-mouth-1l"] },
+        { id:"stoecke", label:"Wanderstöcke", level:"empfohlen", products:["bd-distance-carbon-z"] },
+        { id:"groedel", label:"Grödel", level:"optional", products:["snowline-chainsen-pro"], note:"Im Herbst und Frühling bei vereisten Passagen." },
+        { id:"filter", label:"Wasserfilter", level:"optional", products:["sawyer-squeeze","katadyn-befree"] },
+        { id:"proviant", label:"Proviant für unterwegs", level:"pflicht" }
+      ]},
+      { title: "Dokumente & Bezahlen", items: [
+        { id:"reservation", label:"Hüttenreservation bestätigt", level:"pflicht" },
+        { id:"ausweis", label:"Ausweis und SAC-Mitgliederausweis", level:"pflicht", note:"SAC-Mitglieder übernachten günstiger." },
+        { id:"geld", label:"Bargeld oder Twint", level:"pflicht", note:"Nicht jede Hütte akzeptiert Karten." },
+        { id:"rega", label:"Rega-Gönnerausweis", level:"empfohlen" }
+      ]}
+    ]
+  },
+  winter: {
+    label: "Schneeschuhtour",
+    title: "Packliste Schneeschuhtour",
+    sections: [
+      { title: "Winterausrüstung", items: [
+        { id:"schneeschuhe", label:"Schneeschuhe", level:"pflicht", products:["msr-lightning-ascent","tsl-symbioz"] },
+        { id:"lvs", label:"LVS-Gerät", level:"pflicht", products:["mammut-barryvox-s","ortovox-diract-voice"], note:"Abseits gesicherter Trails Pflicht, zusammen mit Schaufel, Sonde und Ausbildung." },
+        { id:"schaufel", label:"Lawinenschaufel und Sonde", level:"pflicht" },
+        { id:"bulletin", label:"Lawinenbulletin (SLF) geprüft", level:"pflicht" },
+        { id:"stoecke", label:"Stöcke mit Schneetellern", level:"pflicht", products:["bd-distance-carbon-z"] }
+      ]},
+      { title: "Bekleidung", items: [
+        { id:"schuhe", label:"Wasserdichte, warme Schuhe", level:"pflicht", products:["hanwag-banks-gtx","lowa-renegade-gtx-mid"] },
+        { id:"baselayer", label:"Merino-Basisschicht", level:"pflicht", products:["icebreaker-200-oasis"] },
+        { id:"fleece", label:"Warme Zwischenschicht", level:"pflicht", products:["patagonia-r1"] },
+        { id:"daune", label:"Daunenjacke", level:"pflicht", products:["rab-microlight-alpine"] },
+        { id:"hardshell", label:"Wind- und Wetterjacke", level:"pflicht", products:["patagonia-torrentshell-3l"] },
+        { id:"muetze", label:"Mütze, Handschuhe, Ersatzhandschuhe", level:"pflicht" },
+        { id:"sonne", label:"Sonnenbrille und Sonnencreme", level:"pflicht" }
+      ]},
+      { title: "Sicherheit & Verpflegung", items: [
+        { id:"rucksack", label:"Rucksack 25–35 l", level:"pflicht", products:["osprey-talon-33","deuter-futura-32"] },
+        { id:"erste-hilfe", label:"Erste-Hilfe-Set", level:"pflicht", products:["deuter-first-aid-kit"] },
+        { id:"notbiwak", label:"Notbiwaksack", level:"pflicht", products:["sol-emergency-bivvy"] },
+        { id:"stirnlampe", label:"Stirnlampe", level:"empfohlen", products:["petzl-actik-core"], note:"Im Winter wird es früh dunkel." },
+        { id:"powerbank", label:"Powerbank", level:"empfohlen", products:["nitecore-nb10000"], note:"Akkus entladen sich in der Kälte schneller." },
+        { id:"messenger", label:"Satelliten-Messenger", level:"optional", products:["inreach-mini-2","inreach-messenger-plus","zoleo"] },
+        { id:"gps-uhr", label:"GPS-Uhr", level:"optional", products:["garmin-fenix-8","garmin-instinct-3","coros-vertix-2s"] },
+        { id:"thermos", label:"Thermosflasche mit warmem Getränk", level:"pflicht" },
+        { id:"proviant", label:"Proviant", level:"pflicht" }
+      ]}
+    ]
+  }
+};
+
+/* =========================================================
+   STATUS (im Browser gespeichert)
+   ========================================================= */
+const STORE_KEY = "advantic-packliste-v1";
+let store = { packed:{}, buy:{}, choice:{}, showOptional:true };
+try { Object.assign(store, JSON.parse(localStorage.getItem(STORE_KEY)) || {}); } catch (e) {}
+const save = () => { try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch (e) {} };
+
+let tour = TOURS[location.hash.slice(1)] ? location.hash.slice(1) : "huette";
+const bucket = (obj) => (obj[tour] = obj[tour] || {});
+const chosen = (item) => {
+  const c = bucket(store.choice)[item.id];
+  return item.products.includes(c) ? c : item.products[0];
+};
+
+/* =========================================================
+   RENDERING
+   ========================================================= */
+function openVideo(p){
+  const close = () => m.remove();
+  const m = el("div", {class:"modal", role:"dialog", "aria-label":`Testvideo ${p.name}`, onclick: e => { if (e.target === m) close(); }},
+    el("div", {class:"box"},
+      el("button", {class:"close", "aria-label":"Schliessen", onclick: close}, "×"),
+      el("iframe", {src:`https://www.youtube-nocookie.com/embed/${p.youtube}?autoplay=1`, title:`Testvideo ${p.name}`,
+        allow:"autoplay; encrypted-media", allowfullscreen:true})));
+  document.addEventListener("keydown", function esc(e){ if (e.key === "Escape") { close(); document.removeEventListener("keydown", esc); } });
+  document.body.append(m);
+}
+
+function itemRow(item){
+  const packed = !!bucket(store.packed)[item.id];
+  const inCart = !!bucket(store.buy)[item.id];
+  const cbId = `cb-${tour}-${item.id}`;
+  const row = el("div", {class:"item" + (packed ? " done" : "")},
+    el("input", {type:"checkbox", id:cbId, checked:packed, onchange: e => {
+      bucket(store.packed)[item.id] = e.target.checked;
+      if (e.target.checked) delete bucket(store.buy)[item.id];
+      save(); render();
+    }}),
+    el("label", {class:"name", for:cbId}, item.label, el("span", {class:`badge ${item.level}`}, item.level)),
+    item.note ? el("div", {class:"note"}, item.note) : null
+  );
+  if (item.products && item.products.length && !packed) {
+    const pid = chosen(item), p = PRODUCT_BY_ID[pid], best = cheapest(p);
+    const picker = item.products.length > 1
+      ? el("select", {"aria-label":`Produkt für ${item.label}`, onchange: e => {
+          bucket(store.choice)[item.id] = e.target.value; save(); render();
+        }}, item.products.map(id => el("option", {value:id, selected: id === pid}, PRODUCT_BY_ID[id].name)))
+      : el("span", {class:"from"}, p.name);
+    row.append(el("div", {class:"shop"},
+      picker,
+      best ? el("span", {class:"from"}, "ab ", el("b", {}, fmtMoney(best.price.value, best.price.currency)), ` bei ${best.label}`) : null,
+      p.youtube ? el("a", {class:"vid", href:`https://www.youtube.com/watch?v=${p.youtube}`, onclick: e => { e.preventDefault(); openVideo(p); }}, "▶ Testvideo") : null,
+      el("button", {class:"btn toggle", "aria-pressed": String(inCart), onclick: () => {
+        const b = bucket(store.buy);
+        inCart ? delete b[item.id] : (b[item.id] = true);
+        save(); render();
+      }}, inCart ? "Auf der Einkaufsliste" : "Fehlt mir noch")
+    ));
+  }
+  return row;
+}
+
+function render(){
+  const t = TOURS[tour];
+  document.getElementById("title").textContent = t.title;
+  document.title = `Advantic, ${t.title}`;
+  document.getElementById("showOptional").checked = store.showOptional;
+
+  document.getElementById("tabs").replaceChildren(...Object.entries(TOURS).map(([key, x]) =>
+    el("button", {class:"chip", role:"tab", "aria-selected": String(key === tour), onclick: () => {
+      tour = key; history.replaceState(null, "", "#" + key); render();
+    }}, x.label)));
+
+  const visible = s => s.items.filter(i => store.showOptional || i.level !== "optional");
+  document.getElementById("list").replaceChildren(...t.sections.map(s => {
+    const items = visible(s);
+    if (!items.length) return null;
+    const done = items.filter(i => bucket(store.packed)[i.id]).length;
+    return el("div", {class:"section"},
+      el("h3", {}, s.title, el("small", {}, `${done}/${items.length}`)),
+      items.map(itemRow));
+  }).filter(Boolean));
+
+  const counted = t.sections.flatMap(s => s.items).filter(i => i.level !== "optional");
+  const packedCount = counted.filter(i => bucket(store.packed)[i.id]).length;
+  document.getElementById("bar").style.width = (counted.length ? packedCount / counted.length * 100 : 0) + "%";
+  document.getElementById("progress").textContent = `${packedCount} von ${counted.length} Pflicht- und empfohlenen Artikeln eingepackt`;
+
+  renderCart();
+}
+
+function renderCart(){
+  const t = TOURS[tour];
+  const items = t.sections.flatMap(s => s.items).filter(i => bucket(store.buy)[i.id] && i.products);
+  const ul = document.getElementById("cart");
+  const totals = {};
+  let missing = 0;
+  ul.replaceChildren(...(items.length ? items.map(item => {
+    const p = PRODUCT_BY_ID[chosen(item)], best = cheapest(p);
+    if (best) totals[best.price.currency] = (totals[best.price.currency] || 0) + best.price.value; else missing++;
+    return el("li", {},
+      el("div", {class:"row"},
+        el("div", {}, el("div", {class:"pname"}, p.name), el("div", {class:"for"}, item.label)),
+        el("button", {class:"x", "aria-label":`${p.name} entfernen`, onclick: () => {
+          delete bucket(store.buy)[item.id]; save(); render();
+        }}, "×")),
+      el("div", {class:"btns"}, offerButtons(p, {compact:true})));
+  }) : [el("li", {class:"empty"}, "Noch leer. Klicke bei einem Artikel auf «Fehlt mir noch».")]));
+
+  const totalBox = document.getElementById("total");
+  const lines = Object.entries(totals).map(([cur, v]) => el("div", {}, el("span", {}, `Summe ${cur}`), el("b", {}, fmtMoney(v, cur))));
+  if (items.length && missing) lines.push(el("div", {class:"for"}, `${missing} Artikel ohne aktuellen Preis, siehe Händler.`));
+  totalBox.replaceChildren(...lines);
+  totalBox.hidden = !lines.length;
+}
+
+document.getElementById("showOptional").addEventListener("change", e => { store.showOptional = e.target.checked; save(); render(); });
+document.getElementById("print").addEventListener("click", () => window.print());
+document.getElementById("reset").addEventListener("click", () => {
+  if (!confirm(`Packliste «${TOURS[tour].label}» zurücksetzen?`)) return;
+  delete store.packed[tour]; delete store.buy[tour]; delete store.choice[tour];
+  save(); render();
+});
+window.addEventListener("hashchange", () => { const h = location.hash.slice(1); if (TOURS[h]) { tour = h; render(); } });
+document.getElementById("pricenote").textContent = priceNote();
+render();
+</script>
+</body>
+</html>
